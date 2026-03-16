@@ -1,57 +1,73 @@
 /*
-    pbaseextended.ino
+    pocketbaseextended_example_getList.ino
 
-    Example of using the PocketbaseExtended Library for Arduino.
-
-    Created 20 January 2024
-    By Jeo Carlo Lubao
-    Modified 29 January 2024
-    By Jeo Carlo Lubao
+    Demonstrates getListEx() with pagination, sorting, and filtering.
+    Works on ESP8266 and ESP32.
 
     https://github.com/jeoooo/PocketbaseExtended
-
 */
+
 #include <PocketbaseExtended.h>
 
-// ESP8266
+// ---- ESP8266 ----
 #include <ESP8266WiFi.h>
-#include <ESP8266HTTPClient.h>
 
-// FOR ESP32
-// #include <HTTPClient.h>
+// ---- ESP32 (comment out the ESP8266 line above and uncomment this) ----
 // #include <WiFi.h>
-// #include <WiFiClientSecure.h>
 
-// HTTPS REQUESTS
-#include <BearSSLHelpers.h>
+const char* ssid     = "YOUR_SSID";
+const char* password = "YOUR_WIFI_PASSWORD";
 
-const char *ssid = "YOUR_SSID";
-const char *password = "YOUR_PASSWORD";
+PocketbaseExtended pb("https://YOUR_POCKETBASE_HOST");
 
-// Initializing the Pocketbase instance
-PocketbaseArduino pb("YOUR_POCKETBASE_BASE_URL");
-String record;
-
-void setup()
-{
+void setup() {
     Serial.begin(115200);
-    WiFi.begin(ssid, password);
 
-    while (WiFi.status() != WL_CONNECTED)
-    {
-        delay(1000);
-        Serial.println("Connecting to WiFi...");
+    WiFi.begin(ssid, password);
+    while (WiFi.status() != WL_CONNECTED) {
+        delay(500);
+        Serial.print(".");
     }
-    // Example usage of getList() function
-    // getList("page", "perPage", "sort", "filter", "skipTotal", "expand", "fields"),
-    // if expand or fields are empty place nullptr
-    record = pb.collection("collection_name").getList("page", "perPage", "sort", "filter", "skipTotal", "expand", "fields");
+    Serial.println("\nWiFi connected");
+
+    // Page 1, 10 per page, sorted newest first
+    PBResponse resp = pb.collection("notes").getListEx(
+        "1",        // page
+        "10",       // perPage
+        "-created", // sort: newest first
+        nullptr,    // filter
+        nullptr,    // skipTotal
+        nullptr,    // expand
+        nullptr     // fields
+    );
+
+    if (resp.ok) {
+        Serial.println(resp.body);
+    } else {
+        Serial.println("Error: " + resp.error);
+    }
+
+    // With filter — only records where active = true
+    PBResponse filtered = pb.collection("notes").getListEx(
+        "1", "20", nullptr,
+        "active = true",  // filter expression
+        nullptr, nullptr, nullptr
+    );
+    Serial.println(filtered.body);
+
+    // Skip total count for faster queries
+    PBResponse fast = pb.collection("notes").getListEx(
+        "1", "30", "-created",
+        nullptr, "1",  // skipTotal=1
+        nullptr, nullptr
+    );
+    Serial.println(fast.body);
 }
 
-void loop()
-{
-    // Fetches and prints data from the 'notes' collection every 5 seconds
-    record = pb.collection("collection_name").getList("page", "perPage", "sort", "filter", "skipTotal", "expand", "fields");
-    Serial.println("Data from 'notes' collection:\n" + record);
-    delay(5000);
+void loop() {
+    PBResponse resp = pb.collection("notes").getListEx("1", "10", "-created");
+    if (resp.ok) {
+        Serial.println(resp.body);
+    }
+    delay(10000);
 }
