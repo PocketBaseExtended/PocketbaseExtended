@@ -84,6 +84,57 @@ PBResponse PocketbaseExtended::authWithPassword(const char* identity, const char
     return resp;
 }
 
+PBResponse PocketbaseExtended::authRefresh() {
+    if (_collection.length() == 0) {
+        PBResponse r; r.ok = false; r.statusCode = 0;
+        r.error = "No collection set. Call collection() first.";
+        return r;
+    }
+    if (_authToken.length() == 0) {
+        PBResponse r; r.ok = false; r.statusCode = 0;
+        r.error = "No token to refresh. Call authWithPassword() first.";
+        return r;
+    }
+
+    String url = _baseUrl + "collections/" + _collection + "/auth-refresh";
+    PBResponse resp = _request("POST", url);
+
+    // Auto-update stored token on success
+    if (resp.ok) {
+        int idx = resp.body.indexOf("\"token\":\"");
+        if (idx != -1) {
+            idx += 9;
+            int end = resp.body.indexOf("\"", idx);
+            if (end != -1) {
+                _authToken = resp.body.substring(idx, end);
+            }
+        }
+    }
+
+    return resp;
+}
+
+// ---------------------------------------------------------------------------
+// Health
+// ---------------------------------------------------------------------------
+
+PBResponse PocketbaseExtended::checkHealth() {
+    String url = _baseUrl + "health";
+    return _request("GET", url);
+}
+
+// ---------------------------------------------------------------------------
+// Files
+// ---------------------------------------------------------------------------
+
+String PocketbaseExtended::getFileUrl(const char* recordId,
+                                       const char* filename,
+                                       const char* thumb) {
+    String url = _baseUrl + "files/" + _collection + "/" + recordId + "/" + filename;
+    url = _appendParam(url, "thumb", thumb);
+    return url;
+}
+
 // ---------------------------------------------------------------------------
 // Private helpers
 // ---------------------------------------------------------------------------
@@ -123,8 +174,8 @@ PBResponse PocketbaseExtended::_request(const char* method, const String& url, c
     resp.error      = "";
 
     if (_collection.length() == 0 &&
-        url.indexOf("/auth-with-password") == -1 &&
-        url.indexOf("/collections/") == -1) {
+        url.indexOf("/collections/") == -1 &&
+        url.indexOf("/health")       == -1) {
         resp.error = "No collection set.";
         return resp;
     }
