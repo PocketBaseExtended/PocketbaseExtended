@@ -1,54 +1,52 @@
 /*
-    pbaseextended.ino
+    pocketbaseextended_example_deleteRecord.ino
 
-    Example of using the PocketbaseExtended Library for Arduino.
-
-    Created 20 January 2024
-    By Jeo Carlo Lubao
-    Modified 29 January 2024
-    By Jeo Carlo Lubao
+    Demonstrates authentication followed by an authorized delete.
+    Works on ESP8266 and ESP32.
 
     https://github.com/jeoooo/PocketbaseExtended
-
 */
+
 #include <PocketbaseExtended.h>
 
-// ESP8266
+// ---- ESP8266 ----
 #include <ESP8266WiFi.h>
-#include <ESP8266HTTPClient.h>
 
-// FOR ESP32
-// #include <HTTPClient.h>
+// ---- ESP32 (comment out the ESP8266 line above and uncomment this) ----
 // #include <WiFi.h>
-// #include <WiFiClientSecure.h>
 
-// HTTPS REQUESTS
-#include <BearSSLHelpers.h>
+const char* ssid     = "YOUR_SSID";
+const char* password = "YOUR_WIFI_PASSWORD";
 
-const char *ssid = "YOUR_SSID";
-const char *password = "YOUR_PASSWORD";
+PocketbaseExtended pb("https://YOUR_POCKETBASE_HOST");
 
-// Initializing the Pocketbase instance
-PocketbaseArduino pb("YOUR_POCKETBASE_BASE_URL");
-String record;
-
-void setup()
-{
+void setup() {
     Serial.begin(115200);
+
     WiFi.begin(ssid, password);
-
-    while (WiFi.status() != WL_CONNECTED)
-    {
-        delay(1000);
-        Serial.println("Connecting to WiFi...");
+    while (WiFi.status() != WL_CONNECTED) {
+        delay(500);
+        Serial.print(".");
     }
+    Serial.println("\nWiFi connected");
 
-    // Example usage of deleteRecord function
-    // deleteRecord("record_id");
-    record = pb.collection("collection_name").deleteRecord("record_id");
+    // Authenticate first (token is stored automatically on success)
+    PBResponse auth = pb.collection("users").authWithPassword("user@example.com", "yourpassword");
+
+    if (!auth.ok) {
+        Serial.println("Auth failed: " + auth.error);
+        return;
+    }
+    Serial.println("Authenticated. Token: " + pb.getAuthToken());
+
+    // Now delete a record — the bearer token is sent automatically
+    PBResponse del = pb.collection("notes").deleteRecordEx("RECORD_ID");
+
+    if (del.ok) {
+        Serial.println("Deleted (status " + String(del.statusCode) + ")");
+    } else {
+        Serial.println("Delete failed (" + String(del.statusCode) + "): " + del.error);
+    }
 }
 
-void loop()
-{
-    // loop code here
-}
+void loop() {}

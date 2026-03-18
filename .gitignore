@@ -1,9 +1,17 @@
-.vscode
 test.ino
 pocketbasearduino.ino
-pb_data
-pb_migrations
+pb_data/
+pb_migrations/
 pocketbase.exe
-CHANGELOG.md
-LICENSE.md
-pocketbase_0.20.5_windows_amd64.zip
+pocketbase_*.zip
+build/
+*.o
+*.elf
+*.bin
+*.hex
+.DS_Store
+Thumbs.db
+
+# Editor / tool config
+.vscode
+.claude

@@ -1,70 +1,62 @@
 /*
-    pbaseextended.ino
+    pocketbaseextended_example.ino
 
-    Example of using the PocketbaseExtended Library for Arduino.
-
-    Created 20 January 2024
-    By Jeo Carlo Lubao
-    Modified 29 January 2024
-    By Jeo Carlo Lubao
+    Quick-start: CRUD operations with PocketbaseExtended.
+    Works on both ESP8266 and ESP32 — uncomment the correct WiFi headers below.
 
     https://github.com/jeoooo/PocketbaseExtended
-
 */
+
 #include <PocketbaseExtended.h>
 
-// ESP8266
+// ---- ESP8266 ----
 #include <ESP8266WiFi.h>
-#include <ESP8266HTTPClient.h>
 
-// FOR ESP32
-// #include <HTTPClient.h>
+// ---- ESP32 (comment out the ESP8266 lines above and uncomment these) ----
 // #include <WiFi.h>
-// #include <WiFiClientSecure.h>
 
-// HTTPS REQUESTS
-#include <BearSSLHelpers.h>
+const char* ssid     = "YOUR_SSID";
+const char* password = "YOUR_WIFI_PASSWORD";
 
-const char *ssid = "YOUR_SSID";
-const char *password = "YOUR_PASSWORD";
+PocketbaseExtended pb("https://YOUR_POCKETBASE_HOST");
 
-// Initializing the Pocketbase instance
-PocketbaseArduino pb("YOUR_POCKETBASE_BASE_URL");
-String record;
-
-void setup()
-{
+void setup() {
     Serial.begin(115200);
+
     WiFi.begin(ssid, password);
-
-    while (WiFi.status() != WL_CONNECTED)
-    {
-        delay(1000);
-        Serial.println("Connecting to WiFi...");
+    while (WiFi.status() != WL_CONNECTED) {
+        delay(500);
+        Serial.print(".");
     }
+    Serial.println("\nWiFi connected");
 
-    // Example usage of getOne() function
-    // getOne("record_id", "expand", "fields"),
-    // if expand or fields are empty place nullptr
-    record = pb.collection("collection_name").getOne("record_id", "expand", "fields");
+    // Optional: enable debug logging during development
+    // pb.setDebug(true);
 
-    // Example usage of getList() function
-    // getList("page", "perPage", "sort", "filter", "skipTotal", "expand", "fields"),
-    // if expand or fields are empty place nullptr
-    record = pb.collection("collection_name").getList("page", "perPage", "sort", "filter", "skipTotal", "expand", "fields");
+    // ----- getOne -----
+    String rec = pb.collection("notes").getOne("RECORD_ID");
+    Serial.println("getOne: " + rec);
 
-    // Example usage of deleteRecord function
-    // deleteRecord("record_id");
-    record = pb.collection("collection_name").deleteRecord("record_id");
+    // ----- getList -----
+    String list = pb.collection("notes").getList("1", "10", "-created", nullptr, nullptr, nullptr, nullptr);
+    Serial.println("getList: " + list);
 
-    // printing data
-    Serial.println(record);
+    // ----- create -----
+    String created = pb.collection("notes").create("{\"title\":\"Hello\",\"body\":\"from ESP\"}");
+    Serial.println("create: " + created);
+
+    // ----- update -----
+    String updated = pb.collection("notes").update("RECORD_ID", "{\"title\":\"Updated\"}");
+    Serial.println("update: " + updated);
+
+    // ----- delete -----
+    String deleted = pb.collection("notes").deleteRecord("RECORD_ID");
+    Serial.println("delete: " + deleted);
 }
 
-void loop()
-{
-    // Fetches and prints data from the 'notes' collection every 5 seconds
-    record = pb.collection("collection_name").getList("page", "perPage", "sort", "filter", "skipTotal", "expand", "fields");
-    Serial.println("Data from 'notes' collection:\n" + record);
-    delay(5000);
+void loop() {
+    // Poll every 10 seconds
+    String list = pb.collection("notes").getList(nullptr, nullptr, "-created");
+    Serial.println(list);
+    delay(10000);
 }
