@@ -100,6 +100,18 @@ PBResponse PocketbaseExtended::deleteRecordEx(const char* recordId) {
 }
 
 // ---------------------------------------------------------------------------
+// PBQuery overloads (delegate to positional methods above)
+// ---------------------------------------------------------------------------
+
+PBResponse PocketbaseExtended::getListEx(const PBQuery& q) {
+    return getListEx(q.page, q.perPage, q.sort, q.filter, q.skipTotal, q.expand, q.fields);
+}
+
+PBResponse PocketbaseExtended::getOneEx(const char* recordId, const PBQuery& q) {
+    return getOneEx(recordId, q.expand, q.fields);
+}
+
+// ---------------------------------------------------------------------------
 // Convenience wrappers (return body String for backward compatibility)
 // ---------------------------------------------------------------------------
 
@@ -129,4 +141,12 @@ String PocketbaseExtended::update(const char* recordId, const String& requestBod
 
 String PocketbaseExtended::deleteRecord(const char* recordId) {
     return deleteRecordEx(recordId).body;
+}
+
+String PocketbaseExtended::getList(const PBQuery& q) {
+    return getListEx(q).body;
+}
+
+String PocketbaseExtended::getOne(const char* recordId, const PBQuery& q) {
+    return getOneEx(recordId, q).body;
 }

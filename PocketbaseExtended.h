@@ -48,6 +48,31 @@ struct PBResponse {
 };
 
 // ---------------------------------------------------------------------------
+// Query options
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief  Named query parameters for getList and getOne requests.
+ *
+ * Use this struct instead of positional @c nullptr placeholders:
+ * @code
+ * PBQuery q;
+ * q.filter = "active=true";
+ * q.sort   = "-created";
+ * pb.collection("notes").getList(q);
+ * @endcode
+ */
+struct PBQuery {
+    const char* page      = nullptr; ///< Page number (1-based). Default: 1.
+    const char* perPage   = nullptr; ///< Records per page (max 500). Default: 30.
+    const char* sort      = nullptr; ///< Sort expression, e.g. @c "-created,id".
+    const char* filter    = nullptr; ///< Filter expression, e.g. @c "active=true".
+    const char* skipTotal = nullptr; ///< Set to @c "1" to omit totalItems/totalPages.
+    const char* expand    = nullptr; ///< Comma-separated relation fields to expand.
+    const char* fields    = nullptr; ///< Comma-separated fields to include in response.
+};
+
+// ---------------------------------------------------------------------------
 // Client class
 // ---------------------------------------------------------------------------
 
@@ -121,6 +146,16 @@ public:
                         const char* expand = nullptr,
                         const char* fields = nullptr);
 
+    /** @brief  PBQuery overload — avoids nullptr placeholders.
+     *
+     * @code
+     * PBQuery q;
+     * q.expand = "author";
+     * PBResponse r = pb.collection("posts").getOneEx("RECORD_ID", q);
+     * @endcode
+     */
+    PBResponse getOneEx(const char* recordId, const PBQuery& q);
+
     /**
      * @brief  Fetch a paginated list of records.
      *
@@ -148,6 +183,17 @@ public:
                          const char* skipTotal = nullptr,
                          const char* expand    = nullptr,
                          const char* fields    = nullptr);
+
+    /** @brief  PBQuery overload — avoids nullptr placeholders.
+     *
+     * @code
+     * PBQuery q;
+     * q.filter = "active=true";
+     * q.sort   = "-created";
+     * PBResponse r = pb.collection("notes").getListEx(q);
+     * @endcode
+     */
+    PBResponse getListEx(const PBQuery& q);
 
     /**
      * @brief  Create a new record.
@@ -199,6 +245,9 @@ public:
                   const char* expand = nullptr,
                   const char* fields = nullptr);
 
+    /** @brief  PBQuery overload — avoids nullptr placeholders. @see getOneEx(const char*, const PBQuery&) */
+    String getOne(const char* recordId, const PBQuery& q);
+
     /**
      * @brief  Convenience wrapper for getListEx(). Returns the response body.
      * @see    getListEx()
@@ -210,6 +259,9 @@ public:
                    const char* skipTotal = nullptr,
                    const char* expand    = nullptr,
                    const char* fields    = nullptr);
+
+    /** @brief  PBQuery overload — avoids nullptr placeholders. @see getListEx(const PBQuery&) */
+    String getList(const PBQuery& q);
 
     /**
      * @brief  Convenience wrapper for createEx(). Returns the response body.
